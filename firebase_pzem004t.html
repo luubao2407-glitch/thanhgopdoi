@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ thống phân phối điện thanh góp đôi - HCMUTE</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <style>
+        /* Định nghĩa các biến màu sắc toàn cục (CSS Variables) để dễ dàng quản lý giao diện */
+        :root {
+            --bg-color: #0f172a;    /* Màu nền tối của trang web (Xanh đen) */
+            --card-bg: #1e293b;     /* Màu nền của các thẻ/hộp chứa */
+            --accent-blue: #3b82f6; /* Màu xanh dương làm điểm nhấn thương hiệu */
+            --power-red: #ef4444;   /* Màu đỏ báo trạng thái ngắt điện hoặc lỗi */
+            --on-green: #22c55e;    /* Màu xanh lá khi thiết bị ĐÓNG mạch (Có điện) */
+            --phase-b: #fbbf24;     /* Màu vàng đại diện cho Pha B */
+            --phase-c: #a855f7;     /* Màu tím đại diện cho Pha C */
+        }
+
+        /* Định dạng chung cho toàn bộ trang */
+        body { 
+            font-family: 'Segoe UI', Arial; 
+            background: var(--bg-color); 
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+        }
+
+        /* Định dạng hộp tiêu đề (Header) ở đầu trang */
+        .header-box {
+            display: flex;          /* Sử dụng mô hình hộp linh hoạt để xếp logo và chữ nằm ngang */
+            align-items: center;    /* Căn giữa các phần tử theo chiều dọc */
+            background: var(--card-bg);
+            padding: 20px 30px;
+            border-radius: 15px;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); /* Tạo hiệu ứng đổ bóng cho hộp */
+            max-width: 1150px;
+            margin: 0 auto 30px auto; /* Căn giữa hộp tiêu đề ra giữa màn hình */
+        }
+
+        .logo-hcmute { width: 180px; height: auto; margin-right: 25px; }
+        .header-text-container { flex-grow: 1; text-align: center; padding-right: 50px; }
+        .main-title { margin: 0; font-size: 22px; font-weight: bold; text-transform: uppercase; line-height: 1.3; }
+        .sub-title { margin: 10px 0 0 0; font-size: 15px; color: var(--accent-blue); font-weight: 600; text-transform: uppercase; }
+
+        /* Định dạng lưới hiển thị 6 đồng hồ đo (Gauges) */
+        .gauge-container { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); /* Chia đều thành 3 cột trên một hàng */
+            gap: 20px;                             /* Khoảng cách giữa các đồng hồ */
+            max-width: 1150px; 
+            margin: 0 auto 40px auto; 
+        }
+        
+        /* Định dạng từng thẻ chứa đồng hồ đo */
+        .gauge-card { 
+            background: white; 
+            color: #333; 
+            padding: 15px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
+        }
+        
+        .gauge-title { font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 10px; text-transform: uppercase; }
+        
+        /* Xoay ngược SVG -90 độ để thanh đo chạy bắt đầu từ đỉnh trên cùng đi theo chiều kim đồng hồ */
+        .gauge-svg { transform: rotate(-90deg); }
+        .gauge-bg { fill: none; stroke: #f1f5f9; stroke-width: 10; } /* Vòng tròn nền xám của đồng hồ */
+        
+        /* Thanh màu động hiển thị giá trị điện áp/dòng điện */
+        .gauge-path { 
+            fill: none; 
+            stroke-width: 10; 
+            stroke-linecap: round; /* Bo tròn hai đầu thanh đo */
+            transition: stroke-dashoffset 0.6s ease; /* Hiệu ứng mượt mà khi giá trị thay đổi */
+        }
+        
+        /* Định dạng chữ số hiển thị ở tâm đồng hồ */
+        .gauge-text { font-size: 24px; font-weight: 800; fill: #1e293b; }
+        
+        /* Khung chứa sơ đồ SCADA hệ thống điện */
+        .scada-container {
+            max-width: 1150px;
+            margin: 0 auto 40px auto;
+            background: #0b1120;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.3); /* Đổ bóng bên trong và bên ngoài */
+            border: 1px solid #1e293b;
+        }
+
+        .scada-svg { width: 100%; height: auto; background: transparent; }
+        
+        /* Định dạng đường dây dẫn điện mặc định khi mất điện (Màu xám sẫm) */
+        .line { stroke: #334155; stroke-width: 6; fill: none; transition: stroke 0.3s; }
+        
+        /* Kiểu dây dẫn khi CÓ ĐIỆN: Đổi sang màu đỏ và có hiệu ứng nét đứt chuyển động */
+        .power-flow { 
+            stroke: var(--power-red); 
+            stroke-dasharray: 15, 10;          /* Tạo nét đứt (Độ dài nét: 15px, khoảng cách: 10px) */
+            animation: flow 1s linear infinite; /* Chạy hiệu ứng hoạt họa vô hạn */
+        }
+        
+        /* Tạo hiệu ứng dịch chuyển nét đứt để mô phỏng dòng điện đang chạy */
+        @keyframes flow { 
+            from { stroke-dashoffset: 25; } 
+            to { stroke-dashoffset: 0; } 
+        }
+
+        /* Định dạng các khối vuông đại diện cho Thiết bị đóng cắt (Dao cách ly / Máy cắt) */
+        .switch { fill: #475569; transition: all 0.3s; stroke: #1e293b; stroke-width: 2; }
+        
+        /* Khi thiết bị ở trạng thái ĐÓNG (ON): Đổi sang màu xanh lá và phát sáng (Glow) */
+        .switch.on { fill: var(--on-green); filter: drop-shadow(0 0 8px var(--on-green)); }
+        
+        /* Định dạng khối hiển thị phụ tải */
+        .load-node { fill: #ef4444; transition: fill 0.5s; stroke: #ef4444; stroke-width: 2; }
+        
+        /* Nhãn văn bản (Tên thiết bị) trong sơ đồ SCADA */
+        .scada-label { fill: #ffffff; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 2px black; }
+
+        /* Cấu trúc nhóm nút nhấn ON/OFF lồng vào trong sơ đồ SCADA */
+        .btn-group { display: flex; gap: 4px; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        .btn-group button { padding: 4px 6px; font-size: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+        .btn-on { background: #16a34a; }       /* Nút ON màu xanh */
+        .btn-on:hover { background: #15803d; }
+        .btn-off { background: #dc2626; }      /* Nút OFF màu đỏ */
+        .btn-off:hover { background: #b91c1c; }
+
+        /* Kiểu dáng cho Đèn báo sự cố (bảo vệ lỗi từ XJ3-G) */
+        .alarm-light { stroke: #1e293b; stroke-width: 2; transition: all 0.4s ease; }
+        .alarm-green { fill: #22c55e; filter: drop-shadow(0 0 8px #22c55e); } /* Đèn xanh: An toàn */
+        
+        /* Đèn đỏ: Có lỗi, kích hoạt hiệu ứng chớp nháy liên tục */
+        .alarm-red { fill: #ef4444; filter: drop-shadow(0 0 12px #ef4444); animation: blink 1s infinite alternate; }
+        .alarm-text { fill: #facc15; font-size: 12px; font-weight: bold; letter-spacing: 0.5px; }
+        
+        /* Định nghĩa hiệu ứng chớp nháy (Thay đổi độ mờ và bán kính phát sáng) */
+        @keyframes blink { 
+            0% { opacity: 1; filter: drop-shadow(0 0 15px #ef4444); } 
+            100% { opacity: 0.6; filter: drop-shadow(0 0 5px #ef4444); } 
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-box">
+        <img src="https://hcmute.edu.vn/images/logo.png" alt="Logo HCMUTE" class="logo-hcmute" onerror="this.src='554794069_24894119716866632_6832994031049309770_n.jpg'">
+        <div class="header-text-container">
+            <h1 class="main-title">Thiết kế hệ thống phân phối điện thanh góp đôi<br>có giám sát từ xa dùng ESP32</h1>
+            <p class="sub-title">KHOA ĐIỆN - ĐIỆN TỬ - ĐẠI HỌC SƯ PHẠM KỸ THUẬT TP.HỒ CHÍ MINH</p>
+            <p style="font-size: 14px; margin-top: 5px;"> GVHD: PGS. TS. Trần Quang Thọ | SV: Lưu Văn Quốc Bảo & Phạm Nhật An </p>
+        </div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="gauge-card">
+            <div class="gauge-title">ĐIỆN ÁP NHÁNH 1(V)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="va-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="va-val">0</text>
+            </svg>
+        </div>
+        
+        <div class="gauge-card">
+            <div class="gauge-title">ĐIỆN ÁP NGUỒN(V)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="vb-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="vb-val">0</text>
+            </svg>
+        </div>
+        
+        <div class="gauge-card">
+            <div class="gauge-title">ĐIỆN ÁP NHÁNH 2(V)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="vc-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="vc-val">0</text>
+            </svg>
+        </div>
+        
+        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 1(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ia-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ia-val">0.0</text></svg></div>
+        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NGUỒN(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ib-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ib-val">0.0</text></svg></div>
+        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 2(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ic-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ic-val">0.0</text></svg></div>
+    </div>
+
+    <div class="scada-container">
+        <svg viewBox="0 0 1150 480" class="scada-svg">
+            <polygon points="20,240 60,220 60,260" fill="#ef4444"/>
+            <text x="10" y="210" style="fill:white; font-weight:bold; font-size:12px;">NGUỒN TỔNG</text>
+            
+            <circle id="ALARM_S14" cx="620" cy="190" r="8" class="alarm-light alarm-green"/>
+            <circle id="ALARM_S24" cx="620" cy="290" r="8" class="alarm-light alarm-green"/>
+
+            <line id="L_MAIN" x1="60" y1="240" x2="80" y2="240" class="line"/>
+            <line id="L_SPLIT_UP" x1="80" y1="240" x2="80" y2="140" class="line"/>
+            <line id="L_SPLIT_DOWN" x1="80" y1="240" x2="80" y2="340" class="line"/>
+
+            <line id="L1_A" x1="80" y1="140" x2="200" y2="140" class="line"/>
+            <line id="L1_B" x1="240" y1="140" x2="320" y2="140" class="line"/>
+            <line id="L1_C" x1="360" y1="140" x2="440" y2="140" class="line"/>
+            <line id="L1_D" x1="480" y1="140" x2="560" y2="140" class="line"/>
+            <line id="L1_E" x1="600" y1="140" x2="650" y2="140" class="line"/>
+
+            <rect id="SW_B11" x="200" y="120" width="40" height="40" class="switch"/><text x="205" y="115" class="scada-label">B11</text>
+            <foreignObject x="180" y="165" width="80" height="30">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B11_ON')">ON</button><button class="btn-off" onclick="cmd('B11_OFF')">OFF</button></div>
+            </foreignObject>
+
+            <rect id="SW_S11" x="320" y="120" width="40" height="40" class="switch"/><text x="325" y="115" class="scada-label">S11</text>
+            <foreignObject x="300" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S11_ON')">ON</button><button class="btn-off" onclick="cmd('S11_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S12" x="440" y="120" width="40" height="40" class="switch"/><text x="445" y="115" class="scada-label">S12</text>
+            <foreignObject x="420" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S12_ON')">ON</button><button class="btn-off" onclick="cmd('S12_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_B12" x="560" y="120" width="40" height="40" class="switch"/><text x="565" y="115" class="scada-label">B12</text>
+            <foreignObject x="540" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B12_ON')">ON</button><button class="btn-off" onclick="cmd('B12_OFF')">OFF</button></div></foreignObject>
+
+            <line id="L2_A" x1="80" y1="340" x2="200" y2="340" class="line"/>
+            <line id="L2_B" x1="240" y1="340" x2="320" y2="340" class="line"/>
+            <line id="L2_C" x1="360" y1="340" x2="440" y2="340" class="line"/>
+            <line id="L2_D" x1="480" y1="340" x2="560" y2="340" class="line"/>
+            <line id="L2_E" x1="600" y1="340" x2="650" y2="340" class="line"/>
+
+            <rect id="SW_B21" x="200" y="320" width="40" height="40" class="switch"/><text x="205" y="315" class="scada-label">B21</text>
+            <foreignObject x="180" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B21_ON')">ON</button><button class="btn-off" onclick="cmd('B21_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S21" x="320" y="320" width="40" height="40" class="switch"/><text x="325" y="315" class="scada-label">S21</text>
+            <foreignObject x="300" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S21_ON')">ON</button><button class="btn-off" onclick="cmd('S21_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S22" x="440" y="320" width="40" height="40" class="switch"/><text x="445" y="315" class="scada-label">S22</text>
+            <foreignObject x="420" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S22_ON')">ON</button><button class="btn-off" onclick="cmd('S22_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_B22" x="560" y="320" width="40" height="40" class="switch"/><text x="565" y="315" class="scada-label">B22</text>
+            <foreignObject x="540" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B22_ON')">ON</button><button class="btn-off" onclick="cmd('B22_OFF')">OFF</button></div></foreignObject>
+
+            <line x1="670" y1="120" x2="670" y2="360" stroke="#475569" stroke-width="8"/>
+            
+            <rect id="SW_S13" x="650" y="120" width="40" height="40" class="switch"/><text x="695" y="135" class="scada-label">S13</text>
+            <foreignObject x="630" y="85" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S13_ON')">ON</button><button class="btn-off" onclick="cmd('S13_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S14" x="650" y="170" width="40" height="40" class="switch"/><text x="695" y="185" class="scada-label">S14</text>
+            <foreignObject x="725" y="175" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S14_ON')">ON</button><button class="btn-off" onclick="cmd('S14_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_BS" x="650" y="220" width="40" height="40" class="switch"/><text x="695" y="235" class="scada-label">BS</text>
+            <foreignObject x="725" y="225" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('BS_ON')">ON</button><button class="btn-off" onclick="cmd('BS_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S24" x="650" y="270" width="40" height="40" class="switch"/><text x="695" y="285" class="scada-label">S24</text>
+            <foreignObject x="725" y="275" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S24_ON')">ON</button><button class="btn-off" onclick="cmd('S24_OFF')">OFF</button></div></foreignObject>
+
+            <rect id="SW_S23" x="650" y="320" width="40" height="40" class="switch"/><text x="695" y="335" class="scada-label">S23</text>
+            <foreignObject x="630" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S23_ON')">ON</button><button class="btn-off" onclick="cmd('S23_OFF')">OFF</button></div></foreignObject>
+
+            <path id="L_S13_OUT" d="M 690 140 L 820 140 L 820 240" class="line"/>
+            <path id="L_S23_OUT" d="M 690 340 L 820 340 L 820 240" class="line"/>
+            <line id="L_BL_IN" x1="820" y1="240" x2="900" y2="240" class="line"/>
+            
+            <rect id="SW_BL" x="900" y="220" width="40" height="40" class="switch"/><text x="905" y="215" class="scada-label">BL</text>
+            <foreignObject x="880" y="265" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('BL_ON')">ON</button><button class="btn-off" onclick="cmd('BL_OFF')">OFF</button></div></foreignObject>
+
+            <line id="L_LOAD" x1="940" y1="240" x2="1020" y2="240" class="line"/>
+            <circle id="LOAD_NODE" cx="1045" cy="240" r="22" class="load-node"/>
+            <text x="1035" y="280" style="fill:white; font-weight:bold;">TẢI</text>
+        </svg>
+    </div>
+
+    <script>
+        // CẤU HÌNH THÔNG SỐ ĐỂ LIÊN KẾT WEB VỚI DATABASE FIREBASE
+        var firebaseConfig = {
+            apiKey: "AIzaSyA6McCMVt38O4qsJeWc5X1skzyFTiYf3n0", 
+            databaseURL: "https://esp32-test2-35f90-default-rtdb.firebaseio.com/"
+        };
+        // Khởi tạo ứng dụng Firebase với cấu hình trên
+        firebase.initializeApp(firebaseConfig);
+
+        // Khai báo danh sách tên tất cả các switch trong hệ thống để quản lý trạng thái động
+        const devices = ["S11","B11","S12","B12","S13","S14","BS","BL","S23","S24","S21","B21","S22","B22"];
+
+        // HÀM GỬI LỆNH ĐIỀU KHIỂN XUỐNG ESP32 (Mô phỏng nút nhấn nhả - Pulse Command)
+        function cmd(name){
+            // Ghi giá trị 1 (Kích hoạt lệnh đóng/mở) lên Firebase path: esp32/[TÊN_LỆNH]
+            firebase.database().ref("esp32/"+name).set(1);
+            // Sau đúng 1 giây (1000ms), tự động xóa trạng thái đưa về 0 để reset nút nhấn trên phần cứng
+            setTimeout(() => firebase.database().ref("esp32/"+name).set(0), 1000);
+        }
+
+        // HÀM CẬP NHẬT GIAO DIỆN ĐỒNG HỒ ĐO (Gauges)
+        function updateGauge(valId, pathId, value, max) {
+            let valEl = document.getElementById(valId);
+            if(valEl) valEl.innerHTML = value; // Ghi chữ số điện áp/dòng điện vào tâm đồng hồ
+            
+            let pathEl = document.getElementById(pathId);
+            if(pathEl) {
+                const circ = 314; // Chu vi vòng tròn SVG cố định
+                // Tính toán tỷ lệ phần trăm thực tế so với giới hạn tối đa để tính độ lệch (offset) của thanh kim đo
+                const offset = circ - (Math.min(value, max) / max) * circ;
+                pathEl.style.strokeDashoffset = offset; // Thay đổi thuộc tính CSS để kéo dài/thu ngắn vạch màu
+            }
+        }
+
+        // KẾT NỐI REALTIME: Lắng nghe điện áp & dòng điện 3 pha liên tục từ ESP32 gửi lên
+        // Mỗi khi biến tương ứng trên Firebase đổi, hàm mũi tên `s => ...` sẽ tự động thực thi ngay lập tức
+        firebase.database().ref("esp32/electrical_3phase/Phase_A/Voltage").on("value", s => updateGauge("va-val", "va-path", s.val() || 0, 250));
+        firebase.database().ref("esp32/electrical_3phase/Phase_A/Current").on("value", s => updateGauge("ia-val", "ia-path", parseFloat(s.val() || 0).toFixed(2), 20));
+        
+        firebase.database().ref("esp32/electrical_3phase/Phase_B/Voltage").on("value", s => updateGauge("vb-val", "vb-path", s.val() || 0, 250));
+        firebase.database().ref("esp32/electrical_3phase/Phase_B/Current").on("value", s => updateGauge("ib-val", "ib-path", parseFloat(s.val() || 0).toFixed(2), 20));
+        
+        firebase.database().ref("esp32/electrical_3phase/Phase_C/Voltage").on("value", s => updateGauge("vc-val", "vc-path", s.val() || 0, 250));
+        firebase.database().ref("esp32/electrical_3phase/Phase_C/Current").on("value", s => updateGauge("ic-val", "ic-path", parseFloat(s.val() || 0).toFixed(2), 20));
+
+        // KẾT NỐI REALTIME: Lắng nghe trạng thái ON/OFF của tất cả các thiết bị đóng cắt
+        devices.forEach(d => {
+            firebase.database().ref("esp32/status/" + d).on("value", s => {
+                let val = s.val(); // Lấy giá trị hiện tại (1: ON, 0: OFF)
+                let sw = document.getElementById("SW_" + d);
+                // Nếu val = 1 thì thêm class CSS "on" để đổi khối vuông sang màu xanh, ngược lại gỡ bỏ class để về màu xám
+                if(sw) val ? sw.classList.add("on") : sw.classList.remove("on");
+                
+                // Gọi hàm tính toán lại luồng chạy của dòng điện toàn hệ thống
+                updatePower();
+            });
+        });
+
+        // HÀM TÔ MÀU DÂY DẪN (Kích hoạt/Hủy hiệu ứng chảy điện power-flow)
+        function line(id, state){
+            let l = document.getElementById(id);
+            if(l) state ? l.classList.add("power-flow") : l.classList.remove("power-flow");
+        }
+
+        // HÀM TÍNH TOÁN LOGIC THÔNG MẠCH TOÀN HỆ THỐNG (Trọng tâm xử lý SCADA)
+        function updatePower(){
+            // Đọc đồng thời toàn bộ trạng thái hiện thời của các thiết bị đóng cắt từ Firebase (Chỉ đọc 1 lần để tính toán cho chuẩn xác)
+            Promise.all(devices.map(d => firebase.database().ref("esp32/status/" + d).once("value")))
+            .then(snapshots => {
+                const s = {}; // Tạo một Object tạm để lưu trữ cục bộ các giá trị vừa lấy về
+                devices.forEach((d, i) => s[d] = snapshots[i].val());
+
+                // Mặc định đầu vào từ nguồn tổng luôn luôn có điện (True)
+                line("L_MAIN", true);
+                line("L_SPLIT_UP", true);
+                line("L_SPLIT_DOWN", true);
+
+                // --- Kiểm tra điều kiện thông mạch trên Thanh Góp 1 ---
+                line("L1_A", true);
+                line("L1_B", s.B11); // Đoạn B có điện khi thiết bị B11 đóng
+                line("L1_C", s.B11 && s.S11); // Đoạn C có điện khi B11 và S11 cùng đóng
+                line("L1_D", s.B11 && s.S11 && s.S12);
+                // Xác định trạng thái toàn diện của BUS 1 (Thanh Góp 1 tràn đầy điện năng)
+                let BUS1 = (s.B11 && s.S11 && s.S12 && s.B12);
+                line("L1_E", BUS1);
+
+                // --- Kiểm tra điều kiện thông mạch trên Thanh Góp 2 ---
+                line("L2_A", true);
+                line("L2_B", s.B21);
+                line("L2_C", s.B21 && s.S21);
+                line("L2_D", s.B21 && s.S21 && s.S22);
+                // Xác định trạng thái toàn diện của BUS 2 (Thanh Góp 2 tràn đầy điện năng)
+                let BUS2 = (s.B21 && s.S21 && s.S22 && s.B22);
+                line("L2_E", BUS2);
+
+                // --- Kiểm tra điều kiện thông mạch ngõ ra ---
+                let OUT1 = BUS1 && s.S13; // Đầu ra mạch nhánh 1 thông khi BUS1 có điện và S13 đóng
+                let OUT2 = BUS2 && s.S23; // Đầu ra mạch nhánh 2 thông khi BUS2 có điện và S23 đóng
+                line("L_S13_OUT", OUT1);
+                line("L_S23_OUT", OUT2);
+
+                // Hệ thống ACTIVE (Sẵn sàng cấp điện ra tổng tải) khi một trong hai nhánh ngõ ra thông mạch
+                let ACTIVE = OUT1 || OUT2;
+                line("L_BL_IN", ACTIVE && s.BL); // Đoạn trước tải thông khi hệ thống active và máy cắt tải BL đóng
+                
+                let loadNode = document.getElementById("LOAD_NODE");
+                // Điều kiện cuối cùng để phụ TẢI sáng đèn màu Xanh (Hoạt động bình thường)
+                if(ACTIVE && s.BL){
+                    line("L_LOAD", true); // Bật hiệu ứng dòng chảy cho dây dẫn cuối cùng
+                    loadNode.style.fill = "#22c55e"; loadNode.style.stroke = "#22c55e"; // Đổi cục tải thành Xanh lá
+                } else {
+                    // Nếu mất điện, ngắt dòng chảy đồ họa và chuyển cục tải sang màu Đỏ báo động
+                    line("L_LOAD", false);
+                    loadNode.style.fill = "#ef4444"; loadNode.style.stroke = "#ef4444";
+                }
+            });
+        }
+
+        // HÀM ĐỔI MÀU ĐÈN CẢNH BÁO SỰ CỐ (Đọc tín hiệu cảnh báo từ Module bảo vệ dòng/áp thực tế)
+        function updateAlarm(id, value) {
+            let alarmEl = document.getElementById(id);
+            if (alarmEl) {
+                if (value === 0) {
+                    // Mức 0: Hệ thống an toàn (Bình thường) -> Đổi sang Đèn Xanh lá ổn định
+                    alarmEl.classList.remove("alarm-red");
+                    alarmEl.classList.add("alarm-green");
+                } else if (value === 1) {
+                    // Mức 1: Phát hiện sự cố mất pha/quá áp/sụt áp -> Đổi sang Đèn Đỏ chớp nháy cảnh báo
+                    alarmEl.classList.remove("alarm-green");
+                    alarmEl.classList.add("alarm-red");
+                }
+            }
+        }
+
+        // LẮNG NGHE TRẠNG THÁI RELAY BẢO VỆ THỰC TẾ CỦA S14 VÀ S24 TỪ FIREBASE
+        // Nếu s.val() bị trống (null) thì mặc định gán bằng 0 (bình thường) để tránh lỗi giao diện
+        firebase.database().ref("esp32/status/realStatusS14").on("value", snapshot => {
+            let val = snapshot.val() !== null ? snapshot.val() : 0; 
+            updateAlarm("ALARM_S14", val);
+        });
+
+        firebase.database().ref("esp32/status/realStatusS24").on("value", snapshot => {
+            let val = snapshot.val() !== null ? snapshot.val() : 0;
+            updateAlarm("ALARM_S24", val);
+        });
+    </script>
+</body>
+</html>
