@@ -2,400 +2,188 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ thống phân phối điện thanh góp đôi - HCMUTE</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập hệ thống - HCMUTE</title>
     <style>
-        /* Định nghĩa các biến màu sắc toàn cục */
+        /* Đồng bộ biến màu với hệ thống SCADA */
         :root {
             --bg-color: #0f172a;    
             --card-bg: #1e293b;     
             --accent-blue: #3b82f6; 
-            --power-red: #ef4444;   
-            --on-green: #22c55e;    
-            --phase-b: #fbbf24;     
-            --phase-c: #a855f7;     
+            --accent-hover: #2563eb;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --error-red: #ef4444;
+            --border-color: #334155;
         }
 
-        body { 
-            font-family: 'Segoe UI', Arial; 
-            background: var(--bg-color); 
-            color: white; 
-            margin: 0; 
-            padding: 20px; 
-            text-align: center; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .header-box {
-            display: flex;          
-            align-items: center;    
-            background: var(--card-bg);
-            padding: 20px 30px;
-            border-radius: 15px;
-            border: 1px solid #334155;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-            max-width: 1150px;
-            margin: 0 auto 30px auto; 
-        }
-
-        .logo-hcmute { width: 180px; height: auto; margin-right: 25px; }
-        .header-text-container { flex-grow: 1; text-align: center; padding-right: 50px; }
-        .main-title { margin: 0; font-size: 22px; font-weight: bold; text-transform: uppercase; line-height: 1.3; }
-        .sub-title { margin: 10px 0 0 0; font-size: 15px; color: var(--accent-blue); font-weight: 600; text-transform: uppercase; }
-
-        .gauge-container { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 20px;                             
-            max-width: 1150px; 
-            margin: 0 auto 40px auto; 
-        }
-        
-        .gauge-card { 
-            background: white; 
-            color: #333; 
-            padding: 15px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
-        }
-        
-        .gauge-title { font-size: 12px; font-weight: bold; color: #64748b; margin-bottom: 10px; text-transform: uppercase; }
-        
-        .gauge-svg { transform: rotate(-90deg); }
-        .gauge-bg { fill: none; stroke: #f1f5f9; stroke-width: 10; } 
-        
-        .gauge-path { 
-            fill: none; 
-            stroke-width: 10; 
-            stroke-linecap: round; 
-            transition: stroke-dashoffset 0.6s ease; 
-        }
-        
-        .gauge-text { font-size: 24px; font-weight: 800; fill: #1e293b; }
-        
-        .scada-container {
-            max-width: 1150px;
-            margin: 0 auto 40px auto;
-            background: #0b1120;
+        .login-container {
+            background-color: var(--card-bg);
+            padding: 40px;
             border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.3); 
-            border: 1px solid #1e293b;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--border-color);
+            text-align: center;
         }
 
-        .scada-svg { width: 100%; height: auto; background: transparent; }
-        
-        .line { stroke: #334155; stroke-width: 6; fill: none; transition: stroke 0.3s; }
-        
-        .power-flow { 
-            stroke: var(--power-red); 
-            stroke-dasharray: 15, 10;          
-            animation: flow 1s linear infinite; 
-        }
-        
-        @keyframes flow { 
-            from { stroke-dashoffset: 25; } 
-            to { stroke-dashoffset: 0; } 
+        .logo {
+            width: 250px;
+            height: auto;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
         }
 
-        .switch { fill: #475569; transition: all 0.3s; stroke: #1e293b; stroke-width: 2; }
-        .switch.on { fill: var(--on-green); filter: drop-shadow(0 0 8px var(--on-green)); }
-        
-        .load-node { fill: #ef4444; transition: fill 0.5s; stroke: #ef4444; stroke-width: 2; }
-        
-        .scada-label { fill: #ffffff; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 2px black; }
-
-        .btn-group { display: flex; gap: 4px; justify-content: center; align-items: center; width: 100%; height: 100%; }
-        .btn-group button { padding: 4px 6px; font-size: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: background 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
-        .btn-on { background: #16a34a; }       
-        .btn-on:hover { background: #15803d; }
-        .btn-off { background: #dc2626; }      
-        .btn-off:hover { background: #b91c1c; }
-
-        .alarm-light { stroke: #1e293b; stroke-width: 2; transition: all 0.4s ease; }
-        .alarm-green { fill: #22c55e; filter: drop-shadow(0 0 8px #22c55e); } 
-        .alarm-red { fill: #ef4444; filter: drop-shadow(0 0 12px #ef4444); animation: blink 1s infinite alternate; }
-        
-        /* CSS cho đèn báo lỗi vận hành ERROR */
-        .alarm-off { fill: #475569; filter: none; }
-        .error-active { animation: hard-blink 0.5s infinite; } /* Chỉ chớp sáng/tắt dứt khoát */
-
-        @keyframes blink { 
-            0% { opacity: 1; filter: drop-shadow(0 0 15px #ef4444); } 
-            100% { opacity: 0.6; filter: drop-shadow(0 0 5px #ef4444); } 
+        .system-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin-bottom: 5px;
+            text-transform: uppercase;
         }
 
-        /* Animation chớp sáng tắt dứt khoát không có hiệu ứng mờ ảo */
-        @keyframes hard-blink {
-            0%, 49% { fill: #ef4444; }   /* Nửa chu kỳ đầu sáng Đỏ */
-            50%, 100% { fill: #475569; } /* Nửa chu kỳ sau tắt thành Xám */
+        .system-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            color: var(--error-red);
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+            font-weight: 500;
+            background-color: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
     </style>
 </head>
-
 <body>
-    <div class="header-box">
-        <img src="https://hcmute.edu.vn/images/logo.png" alt="Logo HCMUTE" class="logo-hcmute" onerror="this.src='554794069_24894119716866632_6832994031049309770_n.jpg'">
-        <div class="header-text-container">
-            <h1 class="main-title">Thiết kế hệ thống phân phối điện thanh góp đôi<br>có giám sát từ xa dùng ESP32</h1>
-            <p class="sub-title">KHOA ĐIỆN - ĐIỆN TỬ - ĐẠI HỌC SƯ PHẠM KỸ THUẬT TP.HỒ CHÍ MINH</p>
-            <p style="font-size: 14px; margin-top: 5px;"> GVHD: PGS. TS. Trần Quang Thọ | SV: Lưu Văn Quốc Bảo & Phạm Nhật An </p>
-        </div>
-    </div>
 
-    <div class="gauge-container">
-        <div class="gauge-card">
-            <div class="gauge-title">ĐIỆN ÁP NHÁNH 1(V)</div>
-            <svg width="120" height="120" class="gauge-svg">
-                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
-                <circle id="va-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/>
-                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="va-val">0</text>
-            </svg>
-        </div>
+    <div class="login-container">
+        <!-- Logo HCMUTE -->
+        <img src="https://hcmute.edu.vn/images/logo.png" alt="Logo HCMUTE" class="logo" onerror="this.src='ChatGPT Image Jun 17, 2026, 03_54_42 PM.png'">
         
-        <div class="gauge-card">
-            <div class="gauge-title">ĐIỆN ÁP NGUỒN(V)</div>
-            <svg width="120" height="120" class="gauge-svg">
-                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
-                <circle id="vb-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/>
-                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="vb-val">0</text>
-            </svg>
+        <div class="system-title">Hệ Thống SCADA</div>
+        <div class="system-subtitle">Đăng nhập để vào bảng điều khiển giám sát</div>
+
+        <div class="input-group">
+            <label for="username">Tài khoản</label>
+            <input type="text" id="username" placeholder="Nhập mã số sinh viên / Tài khoản..." autocomplete="off">
         </div>
-        
-        <div class="gauge-card">
-            <div class="gauge-title">ĐIỆN ÁP NHÁNH 2(V)</div>
-            <svg width="120" height="120" class="gauge-svg">
-                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
-                <circle id="vc-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/>
-                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="vc-val">0</text>
-            </svg>
+
+        <div class="input-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" placeholder="Nhập mật khẩu...">
         </div>
-        
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 1(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ia-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ia-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NGUỒN(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ib-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ib-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 2(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ic-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ic-val">0.0</text></svg></div>
-    </div>
 
-    <div class="scada-container">
-        <svg viewBox="0 0 1150 480" class="scada-svg">
-            <polygon points="20,240 60,220 60,260" fill="#ef4444"/>
-            <text x="10" y="210" style="fill:white; font-weight:bold; font-size:12px;">NGUỒN TỔNG</text>
-            
-            <circle id="ALARM_S14" cx="620" cy="190" r="8" class="alarm-light alarm-green"/>
-            <circle id="ALARM_S24" cx="620" cy="290" r="8" class="alarm-light alarm-green"/>
+        <button class="btn-login" onclick="verifyLogin()">ĐĂNG NHẬP</button>
 
-            <!-- ĐÈN BÁO LỖI VẬN HÀNH ERROR (Góc trên bên phải) -->
-            <circle id="ALARM_ERROR" cx="1045" cy="80" r="15" class="alarm-light alarm-off"/>
-            <text id="TEXT_ERROR" x="1045" y="115" text-anchor="middle" style="fill:#475569; font-weight:bold; font-size:16px; letter-spacing: 1px; transition: fill 0.3s;">ERROR</text>
-
-            <line id="L_MAIN" x1="60" y1="240" x2="80" y2="240" class="line"/>
-            <line id="L_SPLIT_UP" x1="80" y1="240" x2="80" y2="140" class="line"/>
-            <line id="L_SPLIT_DOWN" x1="80" y1="240" x2="80" y2="340" class="line"/>
-
-            <line id="L1_A" x1="80" y1="140" x2="200" y2="140" class="line"/>
-            <line id="L1_B" x1="240" y1="140" x2="320" y2="140" class="line"/>
-            <line id="L1_C" x1="360" y1="140" x2="440" y2="140" class="line"/>
-            <line id="L1_D" x1="480" y1="140" x2="560" y2="140" class="line"/>
-            <line id="L1_E" x1="600" y1="140" x2="650" y2="140" class="line"/>
-
-            <rect id="SW_B11" x="200" y="120" width="40" height="40" class="switch"/><text x="205" y="115" class="scada-label">B11</text>
-            <foreignObject x="180" y="165" width="80" height="30">
-                <div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B11_ON')">ON</button><button class="btn-off" onclick="cmd('B11_OFF')">OFF</button></div>
-            </foreignObject>
-
-            <rect id="SW_S11" x="320" y="120" width="40" height="40" class="switch"/><text x="325" y="115" class="scada-label">S11</text>
-            <foreignObject x="300" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S11_ON')">ON</button><button class="btn-off" onclick="cmd('S11_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S12" x="440" y="120" width="40" height="40" class="switch"/><text x="445" y="115" class="scada-label">S12</text>
-            <foreignObject x="420" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S12_ON')">ON</button><button class="btn-off" onclick="cmd('S12_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_B12" x="560" y="120" width="40" height="40" class="switch"/><text x="565" y="115" class="scada-label">B12</text>
-            <foreignObject x="540" y="165" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B12_ON')">ON</button><button class="btn-off" onclick="cmd('B12_OFF')">OFF</button></div></foreignObject>
-
-            <line id="L2_A" x1="80" y1="340" x2="200" y2="340" class="line"/>
-            <line id="L2_B" x1="240" y1="340" x2="320" y2="340" class="line"/>
-            <line id="L2_C" x1="360" y1="340" x2="440" y2="340" class="line"/>
-            <line id="L2_D" x1="480" y1="340" x2="560" y2="340" class="line"/>
-            <line id="L2_E" x1="600" y1="340" x2="650" y2="340" class="line"/>
-
-            <rect id="SW_B21" x="200" y="320" width="40" height="40" class="switch"/><text x="205" y="315" class="scada-label">B21</text>
-            <foreignObject x="180" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B21_ON')">ON</button><button class="btn-off" onclick="cmd('B21_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S21" x="320" y="320" width="40" height="40" class="switch"/><text x="325" y="315" class="scada-label">S21</text>
-            <foreignObject x="300" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S21_ON')">ON</button><button class="btn-off" onclick="cmd('S21_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S22" x="440" y="320" width="40" height="40" class="switch"/><text x="445" y="315" class="scada-label">S22</text>
-            <foreignObject x="420" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S22_ON')">ON</button><button class="btn-off" onclick="cmd('S22_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_B22" x="560" y="320" width="40" height="40" class="switch"/><text x="565" y="315" class="scada-label">B22</text>
-            <foreignObject x="540" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('B22_ON')">ON</button><button class="btn-off" onclick="cmd('B22_OFF')">OFF</button></div></foreignObject>
-
-            <line x1="670" y1="120" x2="670" y2="360" stroke="#475569" stroke-width="8"/>
-            
-            <rect id="SW_S13" x="650" y="120" width="40" height="40" class="switch"/><text x="695" y="135" class="scada-label">S13</text>
-            <foreignObject x="630" y="85" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S13_ON')">ON</button><button class="btn-off" onclick="cmd('S13_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S14" x="650" y="170" width="40" height="40" class="switch"/><text x="695" y="185" class="scada-label">S14</text>
-            <foreignObject x="725" y="175" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S14_ON')">ON</button><button class="btn-off" onclick="cmd('S14_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_BS" x="650" y="220" width="40" height="40" class="switch"/><text x="695" y="235" class="scada-label">BS</text>
-            <foreignObject x="725" y="225" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('BS_ON')">ON</button><button class="btn-off" onclick="cmd('BS_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S24" x="650" y="270" width="40" height="40" class="switch"/><text x="695" y="285" class="scada-label">S24</text>
-            <foreignObject x="725" y="275" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S24_ON')">ON</button><button class="btn-off" onclick="cmd('S24_OFF')">OFF</button></div></foreignObject>
-
-            <rect id="SW_S23" x="650" y="320" width="40" height="40" class="switch"/><text x="695" y="335" class="scada-label">S23</text>
-            <foreignObject x="630" y="365" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('S23_ON')">ON</button><button class="btn-off" onclick="cmd('S23_OFF')">OFF</button></div></foreignObject>
-
-            <path id="L_S13_OUT" d="M 690 140 L 820 140 L 820 240" class="line"/>
-            <path id="L_S23_OUT" d="M 690 340 L 820 340 L 820 240" class="line"/>
-            <line id="L_BL_IN" x1="820" y1="240" x2="900" y2="240" class="line"/>
-            
-            <rect id="SW_BL" x="900" y="220" width="40" height="40" class="switch"/><text x="905" y="215" class="scada-label">BL</text>
-            <foreignObject x="880" y="265" width="80" height="30"><div xmlns="http://www.w3.org/1999/xhtml" class="btn-group"><button class="btn-on" onclick="cmd('BL_ON')">ON</button><button class="btn-off" onclick="cmd('BL_OFF')">OFF</button></div></foreignObject>
-
-            <line id="L_LOAD" x1="940" y1="240" x2="1020" y2="240" class="line"/>
-            <circle id="LOAD_NODE" cx="1045" cy="240" r="22" class="load-node"/>
-            <text x="1035" y="280" style="fill:white; font-weight:bold;">TẢI</text>
-        </svg>
+        <div class="error-message" id="error-msg"></div>
     </div>
 
     <script>
-        var firebaseConfig = {
-            apiKey: "AIzaSyA6McCMVt38O4qsJeWc5X1skzyFTiYf3n0", 
-            databaseURL: "https://esp32-test2-35f90-default-rtdb.firebaseio.com/"
-        };
-        firebase.initializeApp(firebaseConfig);
+        function verifyLogin() {
+            // Lấy thông tin người dùng nhập vào
+            const userBox = document.getElementById('username').value.trim();
+            const passBox = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
 
-        const devices = ["S11","B11","S12","B12","S13","S14","BS","BL","S23","S24","S21","B21","S22","B22"];
+            // Cấu hình tài khoản cố định
+            const VALID_USER = "Bao22142074";
+            const VALID_PASS = "24072004";
 
-        function cmd(name){
-            firebase.database().ref("esp32/"+name).set(1);
-            setTimeout(() => firebase.database().ref("esp32/"+name).set(0), 1000);
-        }
-
-        function updateGauge(valId, pathId, value, max) {
-            let valEl = document.getElementById(valId);
-            if(valEl) valEl.innerHTML = value; 
-            
-            let pathEl = document.getElementById(pathId);
-            if(pathEl) {
-                const circ = 314; 
-                const offset = circ - (Math.min(value, max) / max) * circ;
-                pathEl.style.strokeDashoffset = offset; 
-            }
-        }
-
-        firebase.database().ref("esp32/electrical_3phase/Phase_A/Voltage").on("value", s => updateGauge("va-val", "va-path", s.val() || 0, 250));
-        firebase.database().ref("esp32/electrical_3phase/Phase_A/Current").on("value", s => updateGauge("ia-val", "ia-path", parseFloat(s.val() || 0).toFixed(2), 20));
-        
-        firebase.database().ref("esp32/electrical_3phase/Phase_B/Voltage").on("value", s => updateGauge("vb-val", "vb-path", s.val() || 0, 250));
-        firebase.database().ref("esp32/electrical_3phase/Phase_B/Current").on("value", s => updateGauge("ib-val", "ib-path", parseFloat(s.val() || 0).toFixed(2), 20));
-        
-        firebase.database().ref("esp32/electrical_3phase/Phase_C/Voltage").on("value", s => updateGauge("vc-val", "vc-path", s.val() || 0, 250));
-        firebase.database().ref("esp32/electrical_3phase/Phase_C/Current").on("value", s => updateGauge("ic-val", "ic-path", parseFloat(s.val() || 0).toFixed(2), 20));
-
-        devices.forEach(d => {
-            firebase.database().ref("esp32/status/" + d).on("value", s => {
-                let val = s.val(); 
-                let sw = document.getElementById("SW_" + d);
-                if(sw) val ? sw.classList.add("on") : sw.classList.remove("on");
-                updatePower();
-            });
-        });
-
-        function line(id, state){
-            let l = document.getElementById(id);
-            if(l) state ? l.classList.add("power-flow") : l.classList.remove("power-flow");
-        }
-
-        function updatePower(){
-            Promise.all(devices.map(d => firebase.database().ref("esp32/status/" + d).once("value")))
-            .then(snapshots => {
-                const s = {}; 
-                devices.forEach((d, i) => s[d] = snapshots[i].val());
-
-                line("L_MAIN", true);
-                line("L_SPLIT_UP", true);
-                line("L_SPLIT_DOWN", true);
-
-                line("L1_A", true);
-                line("L1_B", s.B11); 
-                line("L1_C", s.B11 && s.S11); 
-                line("L1_D", s.B11 && s.S11 && s.S12);
-                let BUS1 = (s.B11 && s.S11 && s.S12 && s.B12);
-                line("L1_E", BUS1);
-
-                line("L2_A", true);
-                line("L2_B", s.B21);
-                line("L2_C", s.B21 && s.S21);
-                line("L2_D", s.B21 && s.S21 && s.S22);
-                let BUS2 = (s.B21 && s.S21 && s.S22 && s.B22);
-                line("L2_E", BUS2);
-
-                let OUT1 = BUS1 && s.S13; 
-                let OUT2 = BUS2 && s.S23; 
-                line("L_S13_OUT", OUT1);
-                line("L_S23_OUT", OUT2);
-
-                let ACTIVE = OUT1 || OUT2;
-                line("L_BL_IN", ACTIVE && s.BL); 
+            // Kiểm tra thông tin
+            if (userBox === VALID_USER && passBox === VALID_PASS) {
+                errorMsg.style.display = "none";
                 
-                let loadNode = document.getElementById("LOAD_NODE");
-                if(ACTIVE && s.BL){
-                    line("L_LOAD", true); 
-                    loadNode.style.fill = "#22c55e"; loadNode.style.stroke = "#22c55e"; 
-                } else {
-                    line("L_LOAD", false);
-                    loadNode.style.fill = "#ef4444"; loadNode.style.stroke = "#ef4444";
-                }
-            });
-        }
-
-        function updateAlarm(id, value) {
-            let alarmEl = document.getElementById(id);
-            if (alarmEl) {
-                if (value === 0) {
-                    alarmEl.classList.remove("alarm-red");
-                    alarmEl.classList.add("alarm-green");
-                } else if (value === 1) {
-                    alarmEl.classList.remove("alarm-green");
-                    alarmEl.classList.add("alarm-red");
-                }
+                // Chuyển hướng sang trang giao diện hệ thống. 
+                // Thay 'index.html' bằng tên file SCADA thực tế của bạn
+                window.location.href = "index.html"; 
+            } else {
+                errorMsg.innerText = "Tài khoản hoặc mật khẩu không chính xác!";
+                errorMsg.style.display = "block";
             }
         }
 
-        firebase.database().ref("esp32/status/realStatusS14").on("value", snapshot => {
-            let val = snapshot.val() !== null ? snapshot.val() : 0; 
-            updateAlarm("ALARM_S14", val);
-        });
-
-        firebase.database().ref("esp32/status/realStatusS24").on("value", snapshot => {
-            let val = snapshot.val() !== null ? snapshot.val() : 0;
-            updateAlarm("ALARM_S24", val);
-        });
-
-        firebase.database().ref("esp32/status/operatingError").on("value", snapshot => {
-            let isError = snapshot.val();
-            let errorLight = document.getElementById("ALARM_ERROR");
-            let errorText = document.getElementById("TEXT_ERROR");
-            
-            if (errorLight && errorText) {
-                if (isError === 1) {
-                    errorLight.classList.remove("alarm-off");
-                    errorLight.classList.add("error-active");
-                    errorText.style.fill = "#ef4444";
-                } else {
-                    errorLight.classList.remove("error-active");
-                    errorLight.classList.add("alarm-off");
-                    errorText.style.fill = "#475569";
-                }
+        // Hỗ trợ nhấn phím Enter để đăng nhập
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                verifyLogin();
             }
         });
-
     </script>
+
 </body>
 </html>
