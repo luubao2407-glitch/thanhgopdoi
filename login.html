@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập hệ thống - HCMUTE</title>
+    <style>
+        /* Đồng bộ biến màu với hệ thống SCADA */
+        :root {
+            --bg-color: #0f172a;    
+            --card-bg: #1e293b;     
+            --accent-blue: #3b82f6; 
+            --accent-hover: #2563eb;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --error-red: #ef4444;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .logo {
+            width: 250px;
+            height: auto;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        .system-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .system-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            color: var(--error-red);
+            font-size: 14px;
+            margin-top: 15px;
+            display: none;
+            font-weight: 500;
+            background-color: rgba(239, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <!-- Logo HCMUTE -->
+        <img src="https://hcmute.edu.vn/images/logo.png" alt="Logo HCMUTE" class="logo" onerror="this.src='ChatGPT Image Jun 17, 2026, 03_54_42 PM.png'">
+        
+        <div class="system-title">Hệ Thống SCADA</div>
+        <div class="system-subtitle">Đăng nhập để vào bảng điều khiển giám sát</div>
+
+        <div class="input-group">
+            <label for="username">Tài khoản</label>
+            <input type="text" id="username" placeholder="Nhập mã số sinh viên / Tài khoản..." autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" placeholder="Nhập mật khẩu...">
+        </div>
+
+        <button class="btn-login" onclick="verifyLogin()">ĐĂNG NHẬP</button>
+
+        <div class="error-message" id="error-msg"></div>
+    </div>
+
+    <script>
+        function verifyLogin() {
+            // Lấy thông tin người dùng nhập vào
+            const userBox = document.getElementById('username').value.trim();
+            const passBox = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            // Cấu hình tài khoản cố định
+            const VALID_USER = "Bao22142074";
+            const VALID_PASS = "24072004";
+
+            // Kiểm tra thông tin
+            if (userBox === VALID_USER && passBox === VALID_PASS) {
+                errorMsg.style.display = "none";
+                
+                // Chuyển hướng sang trang giao diện hệ thống. 
+                // Thay 'index.html' bằng tên file SCADA thực tế của bạn
+                window.location.href = "index.html"; 
+            } else {
+                errorMsg.innerText = "Tài khoản hoặc mật khẩu không chính xác!";
+                errorMsg.style.display = "block";
+            }
+        }
+
+        // Hỗ trợ nhấn phím Enter để đăng nhập
+        document.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                verifyLogin();
+            }
+        });
+    </script>
+
+</body>
+</html>
