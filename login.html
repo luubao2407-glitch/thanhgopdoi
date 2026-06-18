@@ -31,7 +31,7 @@
         .header-box {
             display: flex;          
             align-items: center;    
-            justify-content: space-between; /* Giúp dàn đều các phần tử */
+            justify-content: space-between;
             background: var(--card-bg);
             padding: 20px 30px;
             border-radius: 15px;
@@ -41,13 +41,13 @@
             margin: 0 auto 30px auto; 
         }
 
-        .logo-hcmute { width: 140px; height: auto; } /* Chỉnh lại kích thước cho cân đối */
-        .logo-faculty { width: 140px; height: auto; } /* Class cho logo khoa */
+        .logo-hcmute { width: 140px; height: auto; }
+        .logo-faculty { width: 140px; height: auto; }
         
         .header-text-container { 
             flex-grow: 1; 
             text-align: center; 
-            padding: 0 20px; /* Bỏ padding lệch một bên, thay bằng padding đều 2 bên */
+            padding: 0 20px;
         }
         
         .main-title { margin: 0; font-size: 22px; font-weight: bold; text-transform: uppercase; line-height: 1.3; }
@@ -189,17 +189,32 @@
             </svg>
         </div>
         
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 1(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ia-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ia-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NGUỒN(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ib-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ib-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">DÒNG ĐIỆN NHÁNH 2(A)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="ic-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ic-val">0.0</text></svg></div>
-
-        <div class="gauge-card"><div class="gauge-title">TẦN SỐ NHÁNH 1(H_z)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="fa-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="fa-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">TẦN SỐ NGUỒN(H_z)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="fb-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="fb-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">TẦN SỐ NHÁNH 2(H_z)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="fc-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="fc-val">0.0</text></svg></div>
-
-        <div class="gauge-card"><div class="gauge-title">CÔNG SUẤT NHÁNH 1(W)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="pa-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="pa-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">CÔNG SUẤT NGUỒN(W)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="pb-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="pb-val">0.0</text></svg></div>
-        <div class="gauge-card"><div class="gauge-title">CÔNG SUẤT NHÁNH 2(W)</div><svg width="120" height="120" class="gauge-svg"><circle class="gauge-bg" cx="60" cy="60" r="50"/><circle id="pc-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/><text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="pc-val">0.0</text></svg></div>
+        <div class="gauge-card">
+            <div class="gauge-title">DÒNG ĐIỆN NHÁNH 1(A)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="ia-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ia-val">0.0</text>
+            </svg>
+        </div>
+        
+        <div class="gauge-card">
+            <div class="gauge-title">DÒNG ĐIỆN NGUỒN(A)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="ib-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#fbbf24" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ib-val">0.0</text>
+            </svg>
+        </div>
+        
+        <div class="gauge-card">
+            <div class="gauge-title">DÒNG ĐIỆN NHÁNH 2(A)</div>
+            <svg width="120" height="120" class="gauge-svg">
+                <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+                <circle id="ic-path" class="gauge-path" cx="60" cy="60" r="50" stroke="#a855f7" stroke-dasharray="314" stroke-dashoffset="314"/>
+                <text x="60" y="-60" text-anchor="middle" class="gauge-text" transform="rotate(90)" id="ic-val">0.0</text>
+            </svg>
+        </div>
     </div>
 
     <div class="scada-container">
@@ -356,17 +371,6 @@
         
         firebase.database().ref("esp32/electrical_3phase/Phase_C/Voltage").on("value", s => updateGauge("vc-val", "vc-path", s.val() || 0, 250));
         firebase.database().ref("esp32/electrical_3phase/Phase_C/Current").on("value", s => updateGauge("ic-val", "ic-path", parseFloat(s.val() || 0).toFixed(2), 20));
-
-        // --- ĐỒNG BỘ TẦN SỐ ( Chuẩn đồ thị tròn max lấy 60 Hz ) ---
-        firebase.database().ref("esp32/electrical_3phase/Phase_A/Frequency").on("value", s => updateGauge("fa-val", "fa-path", parseFloat(s.val() || 0).toFixed(1), 60));
-        firebase.database().ref("esp32/electrical_3phase/Phase_B/Frequency").on("value", s => updateGauge("fb-val", "fb-path", parseFloat(s.val() || 0).toFixed(1), 60));
-        firebase.database().ref("esp32/electrical_3phase/Phase_C/Frequency").on("value", s => updateGauge("fc-val", "fc-path", parseFloat(s.val() || 0).toFixed(1), 60));
-
-        // --- ĐỒNG BỘ CÔNG SUẤT ( Giả định max tải định mức mẫu 5000 W ) ---
-        firebase.database().ref("esp32/electrical_3phase/Phase_A/Power").on("value", s => updateGauge("pa-val", "pa-path", parseFloat(s.val() || 0).toFixed(1), 5000));
-        firebase.database().ref("esp32/electrical_3phase/Phase_B/Power").on("value", s => updateGauge("pb-val", "pb-path", parseFloat(s.val() || 0).toFixed(1), 5000));
-        firebase.database().ref("esp32/electrical_3phase/Phase_C/Power").on("value", s => updateGauge("pc-val", "pc-path", parseFloat(s.val() || 0).toFixed(1), 5000));
-
 
         devices.forEach(d => {
             firebase.database().ref("esp32/status/" + d).on("value", s => {
